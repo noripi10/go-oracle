@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/noripi10/go-oracle/libs"
+
 	"github.com/joho/godotenv"
 
 	"github.com/godror/godror"
@@ -43,20 +45,9 @@ func main() {
 	defer db.Close()
 
 	CD := os.Getenv("CD")
-	rows, err := db.Query("SELECT shain_code, shain_name FROM M_SHAIN WHERE shain_code =:CD", CD)
-
-	if err != nil {
-		fmt.Println("Error running query")
+	var shainCode, shainName, queryErr = libs.GetShain(db, CD)
+	if queryErr != nil {
 		fmt.Println(err)
-		return
-	}
-
-	defer rows.Close()
-
-	var shainCode, shainName string
-	for rows.Next() {
-		rows.Scan(&shainCode, &shainName)
-		break
 	}
 
 	fmt.Println(shainCode, shainName)

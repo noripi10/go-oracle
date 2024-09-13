@@ -1,12 +1,18 @@
 package libs
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
+	"os"
+	"time"
 
-	_ "github.com/godror/godror"
 	"xorm.io/xorm"
 
-	"os"
+	"github.com/godror/godror"
+	_ "github.com/godror/godror"
+
+	"github.com/noripi10/go-oracle/model"
 )
 
 func Query() {
@@ -47,6 +53,18 @@ func Query() {
 	os.Setenv("TNS_ADMIN", tnsAdmin)
 	dataSourceName := os.Getenv("DB_DATA_SOURCE")
 	engine, err := xorm.NewEngine("godror", dataSourceName)
+
+	var connectionParams godror.ConnectionParams
+	connectionParams.Username = os.Getenv("USER_NAME")
+	connectionParams.Password = godror.NewPassword(os.Getenv("USER_PASSWORD"))
+	connectionParams.ConnectString = os.Getenv("CONNECTION_STRING")
+	connectionParams.SessionTimeout = 30 * time.Second
+	// alter session set nls_date_format='yyyy/mm/dd hh24:mi:ss'
+	// ORA-01861対応(timeのデフォルト書式に合わせる)
+	connectionParams.SetSessionParamOnInit("NLS_DATE_FORMAT", "yyyy-mm-dd hh24:mi:ss")
+	connector := godror.NewConnector(connectionParams)
+	engine.DB().DB = sql.OpenDB(connector)
+
 	if err != err {
 		log.Fatal(err)
 	}
@@ -80,21 +98,24 @@ func Query() {
 	// }
 	// fmt.Println(wkData)
 
-	// wkData := WK_DATA{
-	// 	Id:    999,
-	// 	Data1: "hoge",
-	// }
+	wkData := model.WkData{
+		Id:         1001,
+		Data1:      "hoge",
+		InsertDate: time.Now(),
+		UpdateDate: time.Now(),
+	}
+	fmt.Print(wkData)
 
 	// Indert
-	// session := engine.NewSession()
+	session := engine.NewSession()
 
-	// affected, insertErr := engine.Insert(&wkData)
-	// if insertErr != nil {
-	// 	session.Rollback()
-	// 	log.Fatal(insertErr)
-	// }
+	affected, insertErr := engine.Insert(&wkData)
+	if insertErr != nil {
+		session.Rollback()
+		log.Fatal(insertErr)
+	}
 
-	// session.Commit()
+	session.Commit()
 
-	// fmt.Println(affected)
+	fmt.Println(affected)
 }
